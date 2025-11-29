@@ -1,0 +1,34 @@
+[
+    {
+        "classifier": "rbf",
+        "latent_dim": 2,
+        "test_accuracy": 0.9902,
+        "test_ece": 0.44456492595672614,
+        "final_train_acc": 99.34833333333333,
+        "final_test_acc": 99.02
+    },
+    {
+        "classifier": "rbf",
+        "latent_dim": 5,
+        "test_accuracy": 0.9943,
+        "test_ece": 0.5834821367561815,
+        "final_train_acc": 99.705,
+        "final_test_acc": 99.42999999999999
+    },
+    {
+        "classifier": "rbf",
+        "latent_dim": 10,
+        "test_accuracy": 0.9947,
+        "test_ece": 0.5494291385710239,
+        "final_train_acc": 99.86166666666666,
+        "final_test_acc": 99.47
+    },
+    {
+        "classifier": "rbf",
+        "latent_dim": 20,
+        "test_accuracy": 0.9931,
+        "test_ece": 0.5686979391217232,
+        "final_train_acc": 99.85333333333334,
+        "final_test_acc": 99.31
+    }
+]

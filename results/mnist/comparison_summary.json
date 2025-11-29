@@ -1,0 +1,58 @@
+[
+    {
+        "classifier": "dotproduct",
+        "latent_dim": 10,
+        "test_accuracy": 0.9949,
+        "test_ece": 0.003180314528942108,
+        "final_train_acc": 99.95166666666667,
+        "final_test_acc": 99.49
+    },
+    {
+        "classifier": "rbf",
+        "latent_dim": 10,
+        "test_accuracy": 0.9937,
+        "test_ece": 0.5987633231222629,
+        "final_train_acc": 99.825,
+        "final_test_acc": 99.37
+    },
+    {
+        "classifier": "cosface",
+        "latent_dim": 10,
+        "test_accuracy": 0.9947,
+        "test_ece": 0.005118432158231735,
+        "final_train_acc": 99.64333333333333,
+        "final_test_acc": 99.47
+    },
+    {
+        "classifier": "arcface",
+        "latent_dim": 10,
+        "test_accuracy": 0.9958,
+        "test_ece": 0.0040272968769073485,
+        "final_train_acc": 99.80833333333334,
+        "final_test_acc": 99.58
+    },
+    {
+        "classifier": "hybrid",
+        "latent_dim": 10,
+        "test_accuracy": 0.995,
+        "test_ece": 0.0029249960184097295,
+        "final_train_acc": 99.97166666666666,
+        "final_test_acc": 99.5
+    },
+    {
+        "classifier": "adaptive_rbf",
+        "latent_dim": 10,
+        "test_accuracy": 0.9946,
+        "test_ece": 0.003538412344455719,
+        "final_train_acc": 99.92833333333333,
+        "final_test_acc": 99.46000000000001
+    },
+    {
+        "classifier": "mahalanobis",
+        "latent_dim": 10,
+        "test_accuracy": 0.9942,
+        "test_ece": 0.003560785925388336,
+        "final_train_acc": 99.93,
+        "final_test_acc": 99.42
+    }
+]

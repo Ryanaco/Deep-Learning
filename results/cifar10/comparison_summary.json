@@ -1,0 +1,26 @@
+[
+    {
+        "classifier": "dotproduct",
+        "latent_dim": 128,
+        "test_accuracy": 0.8844,
+        "test_ece": 0.07586455748379231,
+        "final_train_acc": 98.544,
+        "final_test_acc": 88.44
+    },
+    {
+        "classifier": "rbf",
+        "latent_dim": 128,
+        "test_accuracy": 0.8839,
+        "test_ece": 0.11289561239778996,
+        "final_train_acc": 98.838,
+        "final_test_acc": 88.39
+    },
+    {
+        "classifier": "adaptive_rbf",
+        "latent_dim": 128,
+        "test_accuracy": 0.8768,
+        "test_ece": 0.08544524468332529,
+        "final_train_acc": 98.714,
+        "final_test_acc": 87.68
+    }
+]

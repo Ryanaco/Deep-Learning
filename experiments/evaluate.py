@@ -34,16 +34,31 @@ def evaluate_trained_model(checkpoint_path, output_dir, use_tsne=True):
     
     # Load checkpoint
     print(f"\nLoading checkpoint from {checkpoint_path}...")
-    checkpoint = torch.load(checkpoint_path, map_location=device)
+    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
     
     # Extract model info from checkpoint path
     # Format: {dataset}_{classifier}_dim{latent_dim}.pt
-    filename = os.path.basename(checkpoint_path)
-    parts = filename.replace('.pt', '').split('_')
+    # filename = os.path.basename(checkpoint_path)
+    # parts = filename.replace('.pt', '').split('_')
+    # dataset_name = parts[0]
+    # classifier_type = parts[1]
+    # latent_dim = int(parts[2].replace('dim', ''))
+
+    filename = os.path.basename(checkpoint_path).replace('.pt', '')
+    parts = filename.split('_')
+    # dataset 名字永远在第一个
     dataset_name = parts[0]
-    classifier_type = parts[1]
-    latent_dim = int(parts[2].replace('dim', ''))
-    
+    # latent_dim 在最后一个字段，例如 dim2
+    dim_part = parts[-1]
+    if dim_part.startswith("dim"):
+        latent_dim = int(dim_part.replace("dim", ""))
+    else:
+        raise ValueError(f"Cannot parse latent dim from: {filename}")
+    # classifier 是中间所有部分合起来
+    # 例如: ['mnist', 'adaptive', 'rbf', 'dim2'] → 'adaptive_rbf'
+    classifier_type = "_".join(parts[1:-1])
+
+
     print(f"Dataset: {dataset_name}")
     print(f"Classifier: {classifier_type}")
     print(f"Latent dimension: {latent_dim}")

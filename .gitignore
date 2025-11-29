@@ -34,8 +34,8 @@ venv/
 *.log
 
 # Ignore large generated artifacts
-outputs/
-results/
+# outputs/
+# results/
 runs/
 
 ###############################
