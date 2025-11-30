@@ -179,7 +179,8 @@ def main():
     
     parser.add_argument('--classifier', type=str, default='rbf',
                        choices=['dotproduct', 'rbf', 'cosface', 'arcface',
-                               'hybrid', 'adaptive_rbf', 'mahalanobis'],
+                               'hybrid', 'adaptive_rbf', 'mahalanobis',
+                               'gaussian', 'laplacian', 'polynomial', 'sigmoid', 'gaussian_norm'],
                        help='Classifier type')
     
     parser.add_argument('--latent_dim', type=int, default=10,
