@@ -14,12 +14,13 @@ DEFAULT_LATENT_DIM = 128
 # Classifier settings
 CLASSIFIERS = {
     'dotproduct': {},
-    'rbf': {'gamma': 0.1},
+    'rbf': {'gamma': 35.0,"s":16},
     'cosface': {'s': 30.0, 'm': 0.35},
     'arcface': {'s': 30.0, 'm': 0.5},
     'hybrid': {'alpha': 0.5, 'gamma': 0.1},
     'adaptive_rbf': {},
     'mahalanobis': {},
+    "dnc":{ 'K':5, 'alpha':40}
 }
 
 # Training settings

@@ -274,7 +274,45 @@ class AdaptiveRBFClassifier(nn.Module):
         # Scale to get logits
         logits = self.s * kernel
         return logits
+class DNCClassifier(nn.Module):
+    """
+    Simplified Deep Nearest Centroids Classifier (ICLR 2023)
+    For each class j, maintain K learnable prototypes c_{j,k}.
+    Logits are computed via soft-min over distances.
+    """
 
+    def __init__(self, in_features, num_classes, K=3, alpha=10.0):
+        super().__init__()
+        self.num_classes = num_classes
+        self.K = K
+        self.alpha = alpha  # soft-min sharpness
+
+        # Learnable prototypes: (num_classes, K, in_features)
+        self.prototypes = nn.Parameter(
+            torch.randn(num_classes, K, in_features)
+        )
+        nn.init.xavier_uniform_(self.prototypes)
+
+    def forward(self, x):
+        """
+        x: (batch, in_features)
+        returns: logits (batch, num_classes)
+        """
+        # Expand dims for broadcasting
+        # x: (B, 1, 1, D)
+        x_expanded = x.unsqueeze(1).unsqueeze(1)
+
+        # prototypes: (1, C, K, D)
+        p = self.prototypes.unsqueeze(0)
+
+        # squared Euclidean distance: (B, C, K)
+        dist_sq = torch.sum((x_expanded - p) ** 2, dim=-1)
+
+        # soft-min over K prototypes
+        # logsumexp(-alpha * dist)
+        logits = -torch.logsumexp(-self.alpha * dist_sq, dim=-1)
+
+        return logits
 
 class MahalanobisClassifier(nn.Module):
     """Mahalanobis distance-based classifier."""
@@ -443,6 +481,7 @@ def get_classifier(classifier_type, in_features, num_classes, **kwargs):
         'polynomial': PolynomialKernelClassifier,
         'sigmoid': SigmoidKernelClassifier,
         'gaussian_norm': NormalizedGaussianClassifier,
+        'dnc': DNCClassifier,
     }
     
     if classifier_type not in classifiers:

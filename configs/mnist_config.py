@@ -18,8 +18,9 @@ CLASSIFIERS = {
     'cosface': {'s': 30.0, 'm': 0.35},
     'arcface': {'s': 30.0, 'm': 0.5},
     'hybrid': {'alpha': 0.5, 'gamma': 1.0},
-    'adaptive_rbf': {},
+    'adaptive_rbf': {'s':1},
     'mahalanobis': {},
+    "dnc":{ 'K':3, 'alpha':10}
 }
 
 # Training settings

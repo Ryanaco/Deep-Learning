@@ -173,17 +173,17 @@ def main():
         description='Run similarity function comparison experiments'
     )
     
-    parser.add_argument('--dataset', type=str, default='mnist',
+    parser.add_argument('--dataset', type=str, default='cifar10',
                        choices=['mnist', 'fashion_mnist', 'cifar10'],
                        help='Dataset to use')
     
-    parser.add_argument('--classifier', type=str, default='rbf',
+    parser.add_argument('--classifier', type=str, default='gaussian_norm',
                        choices=['dotproduct', 'rbf', 'cosface', 'arcface',
                                'hybrid', 'adaptive_rbf', 'mahalanobis',
-                               'gaussian', 'laplacian', 'polynomial', 'sigmoid', 'gaussian_norm'],
+                               'gaussian', 'laplacian', 'polynomial', 'sigmoid', 'gaussian_norm','dnc'],
                        help='Classifier type')
     
-    parser.add_argument('--latent_dim', type=int, default=10,
+    parser.add_argument('--latent_dim', type=int, default=64,
                        help='Latent space dimension')
     
     parser.add_argument('--mode', type=str, default='single',

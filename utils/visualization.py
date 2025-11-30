@@ -9,55 +9,79 @@ import torch
 
 
 def plot_2d_latent_space(features, labels, prototypes=None, save_path=None, title="2D Latent Space"):
-    """Plot 2D latent space directly (no dimensionality reduction needed).
-    
-    Args:
-        features: Feature vectors, shape (n_samples, 2)
-        labels: Class labels, shape (n_samples,)
-        prototypes: Class prototypes, shape (n_classes, 2) [optional]
-        save_path: Path to save the figure
-        title: Plot title
-    """
+    """Plot 2D latent space with support for multi-prototype classifiers (e.g., DNC)."""
+
+    # Convert tensors to numpy
     if isinstance(features, torch.Tensor):
         features = features.numpy()
     if isinstance(labels, torch.Tensor):
         labels = labels.numpy()
     if prototypes is not None and isinstance(prototypes, torch.Tensor):
         prototypes = prototypes.numpy()
-    
-    # Create figure
+
     plt.figure(figsize=(10, 8))
-    
-    # Plot feature points
-    scatter = plt.scatter(features[:, 0], features[:, 1], 
-                         c=labels, cmap='tab10', 
-                         alpha=0.6, s=20, edgecolors='none')
+
+    # ---------------- PLOT FEATURES ----------------
+    scatter = plt.scatter(
+        features[:, 0], features[:, 1],
+        c=labels, cmap='tab10',
+        alpha=0.6, s=20, edgecolors='none'
+    )
     plt.colorbar(scatter, label='Class')
-    
-    # Plot prototypes if available
+
+    # ---------------- PLOT PROTOTYPES (NEW LOGIC) ----------------
     if prototypes is not None:
-        plt.scatter(prototypes[:, 0], prototypes[:, 1],
-                   marker='*', s=500, c='red', 
-                   edgecolors='black', linewidths=2,
-                   label='Class Prototypes', zorder=10)
-        
-        # Annotate prototypes
-        for i, (x, y) in enumerate(prototypes):
-            plt.annotate(f'{i}', (x, y), fontsize=12, 
-                        ha='center', va='center', color='white', weight='bold')
-    
+        num_classes = prototypes.shape[0]
+        colors = plt.cm.tab10(np.arange(num_classes))
+
+        # Case 1: (C, 2) → Standard Softmax/RBF single prototype
+        if prototypes.ndim == 2:
+            for cls_id, (x, y) in enumerate(prototypes):
+                plt.scatter(
+                    x, y, marker='*', s=500,
+                    color=colors[cls_id], edgecolors='black', linewidths=2,
+                    label="Prototypes" if cls_id == 0 else None
+                )
+                plt.annotate(
+                    f'{cls_id}', (x, y),
+                    fontsize=12, ha='center', va='center',
+                    color='white', weight='bold'
+                )
+
+        # Case 2: (C, K, 2) → DNC / Multi-prototype model
+        elif prototypes.ndim == 3:
+            C, K, D = prototypes.shape
+            assert D == 2, "DNC prototype visualization only works for 2D latent."
+
+            for cls_id in range(C):
+                for k in range(K):
+                    x, y = prototypes[cls_id, k]
+                    plt.scatter(
+                        x, y, marker='X', s=180,
+                        color=colors[cls_id], edgecolors='black', linewidths=1.5,
+                        label="Prototypes" if (cls_id == 0 and k == 0) else None
+                    )
+                    plt.annotate(
+                        f'{cls_id}', (x, y),
+                        fontsize=10, ha='center', va='center',
+                        color='black', weight='bold'
+                    )
+
+    # ---------------- PLOT SETTINGS ----------------
     plt.xlabel('Dimension 1', fontsize=12)
     plt.ylabel('Dimension 2', fontsize=12)
     plt.title(title, fontsize=14)
     plt.legend()
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
-    
+
+    # ---------------- SAVE FIGURE ----------------
     if save_path:
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
         print(f"Saved 2D latent space plot to {save_path}")
-    
+
     plt.close()
+
 
 
 def plot_tsne(features, labels, save_path=None, title="t-SNE Visualization"):
