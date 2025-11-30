@@ -48,7 +48,7 @@ class DotProductClassifier(nn.Module):
 class RBFClassifier(nn.Module):
     """RBF-based classifier using radial basis function kernel."""
     
-    def __init__(self, in_features, num_classes, gamma=1.0, s=30.0, 
+    def __init__(self, in_features, num_classes, gamma=1.0, s=2.0, 
                  normalize=False, mode='rbf_kernel'):
         super().__init__()
         
@@ -222,44 +222,58 @@ class HybridClassifier(nn.Module):
 #         return logits
 
 class AdaptiveRBFClassifier(nn.Module):
-    """Adaptive RBF: same as paper RBF-Softmax, but gamma is learned per class."""
-    
-    def __init__(self, in_features, num_classes, s=30.0, normalize=False):
-        super().__init__()
-        
-        # prototypes (same as original)
-        self.prototypes = nn.Parameter(torch.randn(num_classes, in_features))
-        nn.init.xavier_uniform_(self.prototypes)
+    """RBF classifier with a learnable bandwidth (gamma) for each class.
 
-        # log-gamma per class (only new part)
-        self.log_gamma = nn.Parameter(torch.zeros(num_classes))
-        
+    The implementation style is based on the simple RBFLogits from test.py.
+    Each class prototype has its own gamma, allowing the model to learn
+    different feature space sensitivities for each class.
+
+    Args:
+        in_features: Input feature dimension.
+        num_classes: Number of classes.
+        s: Scale parameter for logits.
+    """
+
+    def __init__(self, in_features, num_classes, s=20.0):
+        super(AdaptiveRBFClassifier, self).__init__()
+        self.weight = nn.Parameter(torch.FloatTensor(num_classes, in_features))
+        nn.init.xavier_uniform_(self.weight)
         self.s = s
-        self.normalize = normalize
+
+        # Use log_gamma for stability, ensuring gamma is positive.
+        # Initialize with a value around log(10.0) with noise to provide a
+        # good starting point and break symmetry for adaptive learning.
+        initial_log_gamma = math.log(6.0)
+        noise = torch.randn(num_classes) * 0.1
+        self.log_gamma = nn.Parameter(
+            torch.full((num_classes,), initial_log_gamma) + noise
+        )
 
     def forward(self, x):
-        # (Optional) L2 normalize (same as original)
-        if self.normalize:
-            x = F.normalize(x, dim=1)
-            prototypes = F.normalize(self.prototypes, dim=1)
-        else:
-            prototypes = self.prototypes
-        
-        # squared distances (same as original)
-        x_norm_sq = (x ** 2).sum(dim=1, keepdim=True)  # (B, 1)
-        p_norm_sq = (prototypes ** 2).sum(dim=1)        # (C,)
-        distances_sq = x_norm_sq + p_norm_sq - 2 * (x @ prototypes.T)
+        """Calculates Adaptive RBF logits.
 
-        # gamma per class → positive
-        gamma = torch.exp(self.log_gamma).unsqueeze(0)  # (1, C)
+        Args:
+            x: Input features, shape (batch_size, in_features).
 
-        # *** only change: use exp(-d / gamma) exactly like paper ***
-        rbf = torch.exp(-distances_sq / gamma)
+        Returns:
+            Logits, shape (batch_size, num_classes).
+        """
+        # (batch, 1, features) - (1, classes, features) -> (batch, classes, features)
+        diff = x.unsqueeze(1) - self.weight.unsqueeze(0)
 
-        # logits = s * rbf (same as paper)
-        logits = self.s * rbf
+        # (batch, classes)
+        dist_sq = torch.sum(diff ** 2, dim=-1)
+
+        # Ensure gamma is positive
+        gamma = torch.exp(self.log_gamma)  # shape: (num_classes)
+
+        # Apply RBF kernel with per-class gamma.
+        # Unsqueeze gamma to (1, num_classes) for broadcasting over the batch.
+        kernel = torch.exp(-dist_sq / gamma.unsqueeze(0))
+
+        # Scale to get logits
+        logits = self.s * kernel
         return logits
-
 
 
 class MahalanobisClassifier(nn.Module):
@@ -291,6 +305,126 @@ class MahalanobisClassifier(nn.Module):
         
         logits = -mahalanobis_sq
         return logits
+    
+# New similarity-based classifiers (Gaussian/Laplacian/Polynomial/Sigmoid kernels)
+
+class GaussianKernelClassifier(nn.Module):
+    """Gaussian RBF kernel classifier.
+    logits = s * exp(-0.5 * d / sigma^2) where d is squared Euclidean distance.
+    gamma can be used instead of sigma: gamma = 1 / (2 * sigma^2).
+    """
+    def __init__(self, in_features, num_classes, sigma=1.0, s=10.0, normalize=False):
+        super().__init__()
+        self.prototypes = nn.Parameter(torch.randn(num_classes, in_features))
+        nn.init.xavier_uniform_(self.prototypes)
+        self.sigma = float(sigma)
+        self.s = s
+        self.normalize = normalize
+
+    def forward(self, x):
+        if self.normalize:
+            x = F.normalize(x, dim=1)
+            prototypes = F.normalize(self.prototypes, dim=1)
+        else:
+            prototypes = self.prototypes
+
+        x_norm_sq = (x ** 2).sum(dim=1, keepdim=True)
+        p_norm_sq = (prototypes ** 2).sum(dim=1)
+        d_sq = x_norm_sq + p_norm_sq - 2 * (x @ prototypes.T)  # (B, C)
+
+        # numerical safety
+        d_sq = torch.clamp(d_sq, min=0.0)
+
+        gamma = 1.0 / (2.0 * (self.sigma ** 2) + 1e-12)
+        rbf = torch.exp(-0.5 * d_sq * (1.0 / (self.sigma ** 2 + 1e-12)))  # equivalent
+        logits = self.s * rbf
+        return logits
+
+
+class LaplacianRBFClassifier(nn.Module):
+    """Laplacian RBF kernel: exp(-||x-c|| / b). Uses Euclidean distance (not squared)."""
+    def __init__(self, in_features, num_classes, b=1.0, s=10.0, normalize=False):
+        super().__init__()
+        self.prototypes = nn.Parameter(torch.randn(num_classes, in_features))
+        nn.init.xavier_uniform_(self.prototypes)
+        self.b = float(b)
+        self.s = s
+        self.normalize = normalize
+
+    def forward(self, x):
+        if self.normalize:
+            x = F.normalize(x, dim=1)
+            prototypes = F.normalize(self.prototypes, dim=1)
+        else:
+            prototypes = self.prototypes
+
+        x_norm_sq = (x ** 2).sum(dim=1, keepdim=True)
+        p_norm_sq = (prototypes ** 2).sum(dim=1)
+        d_sq = x_norm_sq + p_norm_sq - 2 * (x @ prototypes.T)
+        d_sq = torch.clamp(d_sq, min=0.0)
+        d = torch.sqrt(d_sq + 1e-12)
+        lap = torch.exp(-d / (self.b + 1e-12))
+        logits = self.s * lap
+        return logits
+
+
+class PolynomialKernelClassifier(nn.Module):
+    """Polynomial kernel-like classifier:
+    logits = s * (alpha * <x, w> + c)^degree
+    This can express non-linear separations in feature space.
+    """
+    def __init__(self, in_features, num_classes, degree=2, alpha=1.0, c=1.0, s=1.0, bias=True):
+        super().__init__()
+        self.weight = nn.Parameter(torch.randn(num_classes, in_features))
+        nn.init.xavier_uniform_(self.weight)
+        self.degree = int(degree)
+        self.alpha = float(alpha)
+        self.c = float(c)
+        self.s = s
+        self.bias = bias
+        if bias:
+            self.class_bias = nn.Parameter(torch.zeros(num_classes))
+        else:
+            self.register_parameter('class_bias', None)
+
+    def forward(self, x):
+        linear = F.linear(x, self.weight)  # (B, C)
+        poly = self.alpha * linear + self.c
+        # allow negative values if degree is odd; clamp for even degree to avoid NaN gradients if desired
+        if self.degree % 2 == 0:
+            poly = torch.clamp(poly, min=-1e6)  # avoid overflow for even powers
+        logits = self.s * (poly.pow(self.degree))
+        if self.bias:
+            logits = logits + self.class_bias.unsqueeze(0)
+        return logits
+
+
+class SigmoidKernelClassifier(nn.Module):
+    """Sigmoid (tanh) kernel-like classifier:
+    logits = s * tanh(alpha * <x, w> + c)
+    """
+    def __init__(self, in_features, num_classes, alpha=0.1, c=0.0, s=10.0):
+        super().__init__()
+        self.weight = nn.Parameter(torch.randn(num_classes, in_features))
+        nn.init.xavier_uniform_(self.weight)
+        self.alpha = float(alpha)
+        self.c = float(c)
+        self.s = s
+
+    def forward(self, x):
+        inner = F.linear(x, self.weight)  # (B, C)
+        out = torch.tanh(self.alpha * inner + self.c)
+        logits = self.s * out
+        return logits
+    
+class NormalizedGaussianClassifier(GaussianKernelClassifier):
+    """Gaussian RBF that additionally L2-normalizes the RBF responses across classes (softness)."""
+    def forward(self, x):
+        rbf_logits = super().forward(x)  # (B, C)
+        # normalize per-sample across classes so that responses form a soft distribution
+        normalized = F.normalize(rbf_logits + 1e-12, p=1, dim=1)
+        # optionally rescale to original s-range
+        return normalized * self.s
 
 
 def get_classifier(classifier_type, in_features, num_classes, **kwargs):
@@ -303,6 +437,12 @@ def get_classifier(classifier_type, in_features, num_classes, **kwargs):
         'hybrid': HybridClassifier,
         'adaptive_rbf': AdaptiveRBFClassifier,
         'mahalanobis': MahalanobisClassifier,
+        # new kernels
+        'gaussian': GaussianKernelClassifier,
+        'laplacian': LaplacianRBFClassifier,
+        'polynomial': PolynomialKernelClassifier,
+        'sigmoid': SigmoidKernelClassifier,
+        'gaussian_norm': NormalizedGaussianClassifier,
     }
     
     if classifier_type not in classifiers:

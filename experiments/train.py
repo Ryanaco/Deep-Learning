@@ -108,7 +108,8 @@ if __name__ == "__main__":
                        choices=['mnist', 'fashion_mnist', 'cifar10'])
     parser.add_argument('--classifier', type=str, default='dotproduct',
                        choices=['dotproduct', 'rbf', 'cosface', 'arcface', 
-                               'hybrid', 'adaptive_rbf', 'mahalanobis'])
+                               'hybrid', 'adaptive_rbf', 'mahalanobis',
+                               'gaussian', 'laplacian', 'polynomial', 'sigmoid', 'gaussian_norm'])
     parser.add_argument('--latent_dim', type=int, default=10)
     parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--lr', type=float, default=0.001)
