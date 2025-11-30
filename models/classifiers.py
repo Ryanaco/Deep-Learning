@@ -222,44 +222,58 @@ class HybridClassifier(nn.Module):
 #         return logits
 
 class AdaptiveRBFClassifier(nn.Module):
-    """Adaptive RBF: same as paper RBF-Softmax, but gamma is learned per class."""
-    
-    def __init__(self, in_features, num_classes, s=30.0, normalize=False):
-        super().__init__()
-        
-        # prototypes (same as original)
-        self.prototypes = nn.Parameter(torch.randn(num_classes, in_features))
-        nn.init.xavier_uniform_(self.prototypes)
+    """RBF classifier with a learnable bandwidth (gamma) for each class.
 
-        # log-gamma per class (only new part)
-        self.log_gamma = nn.Parameter(torch.zeros(num_classes))
-        
+    The implementation style is based on the simple RBFLogits from test.py.
+    Each class prototype has its own gamma, allowing the model to learn
+    different feature space sensitivities for each class.
+
+    Args:
+        in_features: Input feature dimension.
+        num_classes: Number of classes.
+        s: Scale parameter for logits.
+    """
+
+    def __init__(self, in_features, num_classes, s=20.0):
+        super(AdaptiveRBFClassifier, self).__init__()
+        self.weight = nn.Parameter(torch.FloatTensor(num_classes, in_features))
+        nn.init.xavier_uniform_(self.weight)
         self.s = s
-        self.normalize = normalize
+
+        # Use log_gamma for stability, ensuring gamma is positive.
+        # Initialize with a value around log(10.0) with noise to provide a
+        # good starting point and break symmetry for adaptive learning.
+        initial_log_gamma = math.log(6.0)
+        noise = torch.randn(num_classes) * 0.1
+        self.log_gamma = nn.Parameter(
+            torch.full((num_classes,), initial_log_gamma) + noise
+        )
 
     def forward(self, x):
-        # (Optional) L2 normalize (same as original)
-        if self.normalize:
-            x = F.normalize(x, dim=1)
-            prototypes = F.normalize(self.prototypes, dim=1)
-        else:
-            prototypes = self.prototypes
-        
-        # squared distances (same as original)
-        x_norm_sq = (x ** 2).sum(dim=1, keepdim=True)  # (B, 1)
-        p_norm_sq = (prototypes ** 2).sum(dim=1)        # (C,)
-        distances_sq = x_norm_sq + p_norm_sq - 2 * (x @ prototypes.T)
+        """Calculates Adaptive RBF logits.
 
-        # gamma per class → positive
-        gamma = torch.exp(self.log_gamma).unsqueeze(0)  # (1, C)
+        Args:
+            x: Input features, shape (batch_size, in_features).
 
-        # *** only change: use exp(-d / gamma) exactly like paper ***
-        rbf = torch.exp(-distances_sq / gamma)
+        Returns:
+            Logits, shape (batch_size, num_classes).
+        """
+        # (batch, 1, features) - (1, classes, features) -> (batch, classes, features)
+        diff = x.unsqueeze(1) - self.weight.unsqueeze(0)
 
-        # logits = s * rbf (same as paper)
-        logits = self.s * rbf
+        # (batch, classes)
+        dist_sq = torch.sum(diff ** 2, dim=-1)
+
+        # Ensure gamma is positive
+        gamma = torch.exp(self.log_gamma)  # shape: (num_classes)
+
+        # Apply RBF kernel with per-class gamma.
+        # Unsqueeze gamma to (1, num_classes) for broadcasting over the batch.
+        kernel = torch.exp(-dist_sq / gamma.unsqueeze(0))
+
+        # Scale to get logits
+        logits = self.s * kernel
         return logits
-
 
 
 class MahalanobisClassifier(nn.Module):
