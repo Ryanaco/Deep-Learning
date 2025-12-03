@@ -1,0 +1,4 @@
+Classifier,Latent Dim,Test Acc (%),ECE
+dotproduct,128,88.44,0.0759
+rbf,128,88.39,0.1129
+adaptive_rbf,128,87.68,0.0854

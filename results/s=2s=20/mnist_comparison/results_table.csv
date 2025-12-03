@@ -1,0 +1,16 @@
+Classifier,Latent Dim,Test Acc (%),ECE
+adaptive_rbf,2,98.98,0.0033
+adaptive_rbf,5,99.49,0.0035
+adaptive_rbf,10,99.31,0.0037
+adaptive_rbf,20,99.56,0.0033
+dotproduct,10,99.49,0.0032
+rbf,10,99.37,0.5988
+cosface,10,99.47,0.0051
+arcface,10,99.58,0.004
+hybrid,10,99.5,0.0029
+adaptive_rbf,10,99.46,0.0035
+mahalanobis,10,99.42,0.0036
+rbf,2,99.02,0.4446
+rbf,5,99.43,0.5835
+rbf,10,99.47,0.5494
+rbf,20,99.31,0.5687
