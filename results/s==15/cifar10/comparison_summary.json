@@ -1,0 +1,42 @@
+[
+    {
+        "classifier": "dotproduct",
+        "latent_dim": 128,
+        "test_accuracy": 0.8805,
+        "test_ece": 0.08030704264938832,
+        "final_train_acc": 98.648,
+        "final_test_acc": 88.05
+    },
+    {
+        "classifier": "rbf",
+        "latent_dim": 128,
+        "test_accuracy": 0.1,
+        "test_ece": 0.011856220662593842,
+        "final_train_acc": 10.0,
+        "final_test_acc": 10.0
+    },
+    {
+        "classifier": "adaptive_rbf",
+        "latent_dim": 128,
+        "test_accuracy": 0.8545,
+        "test_ece": 0.08163061745166778,
+        "final_train_acc": 95.646,
+        "final_test_acc": 85.45
+    },
+    {
+        "classifier": "cosface",
+        "latent_dim": 128,
+        "test_accuracy": 0.8629,
+        "test_ece": 0.12131951674073935,
+        "final_train_acc": 90.186,
+        "final_test_acc": 86.29
+    },
+    {
+        "classifier": "arcface",
+        "latent_dim": 128,
+        "test_accuracy": 0.8753,
+        "test_ece": 0.423535455429554,
+        "final_train_acc": 0.0,
+        "final_test_acc": 87.53
+    }
+]
