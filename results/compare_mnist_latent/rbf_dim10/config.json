@@ -1,0 +1,8 @@
+{
+    "dataset": "mnist",
+    "classifier": "rbf",
+    "latent_dim": 10,
+    "epochs": 30,
+    "lr": 0.001,
+    "batch_size": 128
+}

@@ -1,0 +1,8 @@
+{
+    "classifier": "rbf",
+    "latent_dim": 10,
+    "test_accuracy": 0.9942,
+    "test_ece": 0.599014853411913,
+    "final_train_acc": 99.87166666666667,
+    "final_test_acc": 99.42
+}
