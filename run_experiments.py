@@ -195,7 +195,7 @@ def main():
                        help='Classifiers to compare (for compare_classifiers mode)')
     
     parser.add_argument('--latent_dims', nargs='+', type=int,
-                       default=[2, 5, 10, 20],
+                       default=[2, 5, 10, 20, 32],
                        help='Latent dimensions to compare (for compare_dims mode)')
     
     args = parser.parse_args()
